@@ -2,8 +2,9 @@ import pandas as pd
 import streamlit as st
 import matplotlib.pyplot as plt
 import re
+import time
 
-
+st.set_page_config(layout="wide")
 def skillCorrection(skills):
     skills = str(skills).replace("\n", ",")
     skills = re.split(r',(?![^(]*\))', skills)
@@ -40,9 +41,19 @@ def getLattitude(location):
     if location in ["Coimbatore"]:
         return 11.004556
     return 18.516726
+
+
 st.write("""
  # Data Representation
 """)
+
+latest_iteration = st.empty()
+bar = st.progress(0)
+
+for i in range(100):
+    # Update the progress bar with each iteration.
+    bar.progress(i + 1)
+    time.sleep(0.1)
 
 df = pd.read_excel("EDA.xlsx")
 df['Primary Skill'].fillna("Generic", inplace=True)
@@ -60,7 +71,7 @@ df['Shared'].fillna("Not available", inplace=True)
 df['Remarks from call'].fillna("No Remarks", inplace=True)
 df['Vertical'].fillna("Not available", inplace=True)
 df['Sub Vertical'].fillna("Not available", inplace=True)
-df["Base Location"].fillna(df["Base Location"].mode(), inplace=True)
+df["Base Location"].fillna(df["Base Location"].mode()[0], inplace=True)
 df["lat"] = df["Base Location"].apply(getLattitude)
 df["lon"] = df["Base Location"].apply(getLongitude)
 df['Resource Updated Status'] = df['Resource Updated Status'].apply(str.strip)
@@ -85,6 +96,7 @@ st.subheader("Skills")
 st.bar_chart(skill_counts_filtered)
 
 java_df = df[df['Primary Skill'].str.contains('Java', case=False)]
+java_df = java_df[["Emp Code", 'Primary Skill', 'Resource Updated Status']]
 st.subheader("List of Java Resources")
 st.write(java_df)
 
@@ -100,7 +112,6 @@ st.pyplot(fig2)
 groupedByVertical = df.groupby(['Vertical', 'Resource Updated Status']).size().unstack(fill_value=0)
 st.subheader("Vertical-wise Status of resource")
 st.bar_chart(groupedByVertical)
-
 
 groupedByReporting = df.groupby(['Reporting Manager', 'Resource Updated Status']).size().unstack(fill_value=0)
 st.subheader("Reporting-wise Status of resource")
@@ -122,9 +133,6 @@ right_column.bar_chart(groupByDigitalServices)
 left_column.subheader("Locations")
 left_column.map(df, latitude="lat", longitude="lon", color="#ffaa00")
 
-
 groupByBaseLocation = df.groupby(['Base Location', 'Resource Updated Status']).size().unstack(fill_value=0)
 right_column.subheader("Location-wise Status of resource")
 right_column.bar_chart(groupByBaseLocation)
-
-
